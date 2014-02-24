@@ -2,26 +2,26 @@
 
 // constants
 var FPS = 60,
-    ONE_SECOND = 1000,
-    BASE_SIXTEEN = 16,
+	ONE_SECOND = 1000,
+	BASE_SIXTEEN = 16,
 
-    MIN_SIZE = 100,
-    MAX_SIZE = 200,
+	MIN_SIZE = 100,
+	MAX_SIZE = 200,
 
-    MIN_SPEED = 10,
-    MAX_SPEED = 20,
+	MIN_SPEED = 10,
+	MAX_SPEED = 20,
 
-    NUM_ITEMS = 3;
+	NUM_ITEMS = 3;
 
 
 // window properties
 var screenHeight = window.innerHeight,
-    screenWidth = window.innerWidth;
+	screenWidth = window.innerWidth;
 
 
 // helper functions 
 function randIntBetween (min, max) {
-    return Math.floor(Math.random() * (max - min + 1)) + min;
+	return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
 function randItem () {
@@ -66,7 +66,7 @@ function Item(type) {
 	this.speed = {
 		x: 0,
 		y: randIntBetween(MIN_SPEED,MAX_SPEED)
-	}
+	};
 	this.clicked = false;
 
 	// class methods
@@ -82,47 +82,37 @@ function Item(type) {
 
 window.onload = function() {
 	// canvas variables
-    var canvas = document.createElement('canvas'),
-        context = canvas.getContext('2d'),
-        main = document.querySelector('div.main');
+	var canvas = document.createElement('canvas'),
+		context = canvas.getContext('2d'),
+		main = document.querySelector('div.main');
 
     // loop variables
-	var frameCount = time = 0,
+    var frameCount = time = 0,
 	    items = [],
 	    types = ['waffle', 'pancake', 'egg'];
 
+	// game variables
 	var score = 0;
 
 	// initialize canvas
 	canvas.width = screenWidth;
 	canvas.height = screenHeight;
 	canvas.addEventListener('click', click, false);
-	canvas.addEventListener('hover', hover, false);
 	main.appendChild(canvas);
 
 	function click(e) {
 		var x = e.clientX,
-		    y = e.clientY;
-		e.preventDefault();
+			y = e.clientY;
+			e.preventDefault();
 
 		var removedItems = _.chain(items)
 			.filter(function(item) { return mouseOnItem(item, x, y); })
 			.each(function(item) {
 				item.clicked = true;
-				score++;
+				if(item.type === 'waffle') score += 5;
+				if(item.type === 'pancake') score -= 5;
+				if(item.type === 'egg') score += 2;
 			});
-	}
-
-	function hover(e) {
-		var x = e.clientX,
-		    y = e.clientY;
-		e.preventDefault();
-
-		_.each(items, function(item){
-			if(mouseOnItem(item,x,y)) {
-				console.log('hi');
-			};
-		})
 	}
 
 	// animation loop
@@ -131,6 +121,11 @@ window.onload = function() {
 
 		context.clearRect(0,0,screenWidth,screenHeight);
 		context.save();
+
+		context.fillText(time, 40, 40);
+		context.font = 'bold 100pt Arial';
+		context.textAlign = 'center';
+		context.fillText(score, screenWidth/2, screenHeight/2);
 
 		frameCount++;
 		if(frameCount % FPS == 0) {
@@ -148,8 +143,6 @@ window.onload = function() {
 				item.move();
 				context.drawImage(item.el, item.pos.x, item.pos.y);
 			});
-
-		context.fillText(score, 300, 300);
 
 		context.restore();
 		requestAnimationFrame(loop, FPS);
