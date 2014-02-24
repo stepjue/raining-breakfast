@@ -1,0 +1,12 @@
+* {
+	margin: 0;
+	padding: 0;
+}
+
+.ball {
+  background: url('https://cdn1.iconfinder.com/data/icons/3D-shapes-psd/256/ball-6x6.png');
+  width: 100px;
+  height: 100px;
+  background-size: 100px 100px;
+  cursor: pointer;
+}
