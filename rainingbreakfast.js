@@ -1,157 +1,155 @@
 (function() {
 
-// constants
-var FPS = 60,
-    ONE_SECOND = 1000,
-    BASE_SIXTEEN = 16,
-    MIN_SIZE = 100,
-    MAX_SIZE = 200,
-    MIN_SPEED = 10,
-    MAX_SPEED = 20,
-    NUM_ITEMS = 3;
+window.RB = window.RB || {};
 
-// window properties
-var screenHeight = window.innerHeight,
-    screenWidth = window.innerWidth;
+RB.const = {
+	windowHeight: window.innerHeight,
+	windowWidth: window.innerWidth
+};
 
+RB.resources = {
+	images: {
+		waffle: 'images/waffle.png',
+		pancake: 'images/pancake.png',
+		doge: 'images/doge.png',
+		egg: 'images/egg.png'
+	}
+};
 
-// helper functions 
-function randIntBetween (min, max) {
-	return Math.floor(Math.random() * (max - min + 1)) + min;
-}
+RB.objects = {
+	item: function(type) {
+		this.type = type;
+		this.img = document.createElement('img');
+		this.img.src = RB.resources.images[type];
+		this.dim = {
+			x: 200,
+			y: 200
+		};
+		this.pos = {
+			x: RB.helpers.randIntBetween(this.dim.x, RB.const.windowWidth - this.dim.x),
+			y: 0
+		};
+		this.speed = RB.helpers.randIntBetween(200, 800);
+	},
 
-function randItem () {
-	return randIntBetween(0, NUM_ITEMS - 1);
-}
+	items: []
+};
 
-function vendorRequestAnimationFrame() {
-	return (
-		window.webkitRequestAnimationFrame ||
-		window.mozRequestAnimationFrame ||
-		window.oRequestAnimationFrame ||
-		window.msRequestAnimationFrame ||
-		function(  callback, fps ) {
-			window.setTimeout( callback, ONE_SECOND / fps );
+RB.init = function() {
+	RB.setup.createCanvas();
+	RB.setup.preloadImages();
+	RB.setup.createObjects();
+	RB.setup.addListeners();
+	RB.play();
+};
+
+RB.pause = function() {
+	window.cancelAnimationFrame(RB.core.animationFrame);
+	RB.isRunning = false;
+};
+
+RB.play = function() {
+	if (!RB.isRunning) {
+		RB.core.then = Date.now();
+		RB.core.frame();
+		RB.isRunning = true;
+	}
+};
+
+RB.core = {
+	frame: function() {
+		RB.core.setDelta();
+		RB.core.update();
+		RB.workers.renderObjects();
+		RB.core.render();
+		RB.core.animationFrame = window.requestAnimationFrame(RB.core.frame);
+	},
+
+	setDelta: function() {
+		RB.core.now = Date.now();
+		RB.core.delta = (RB.core.now - RB.core.then) / 1000;
+		RB.core.then = RB.core.now;
+	},
+
+	update: function() {
+		RB.workers.moveItems();
+	},
+
+	render: function() {
+		RB.workers.clearCanvas();
+		RB.workers.renderGraphics();
+	}
+};
+
+RB.setup = {
+	preloadImages: function() {
+		var imageObj = new Image();
+		_.each(RB.resources.images, function(source, name, images) {
+			imageObj.src = source;
+		});
+	},
+
+	addListeners: function() {
+	//	window.addEventListener('resize', );
+	},
+
+	createCanvas: function() {
+		RB.canvas = document.createElement('canvas');
+		RB.canvas.width = RB.const.windowWidth;
+		RB.canvas.height = RB.const.windowHeight;
+		RB.canvas.context = RB.canvas.getContext('2d');
+		document.getElementById('rainingbreakfast').appendChild(RB.canvas);
+	},
+
+	createObjects: function() {
+		// Setup item timer
+		RB.itemTimer = 0;
+	}
+};
+
+RB.workers = {
+	moveItems: function() {
+		RB.objects.items = _
+			.chain(RB.objects.items)
+			.each(function(item) {
+				var velocity = item.speed * RB.core.delta;
+				item.pos.y += velocity;
+			})
+			.filter(function(item) {
+				return item.pos.y <= RB.const.windowHeight;
+			})
+			.value();
+	},
+
+	clearCanvas: function() {
+		RB.canvas.context.clearRect(0, 0, RB.const.windowWidth, RB.const.windowHeight);
+	},
+
+	renderGraphics: function() {
+		_.each(RB.objects.items, function(item) {
+			var wholePixelItemY = (item.pos.y + 0.5) | 0; // fast round to whole pixel
+			RB.canvas.context.drawImage(item.img, item.pos.x, wholePixelItemY, item.dim.x, item.dim.y);
+		});
+	},
+
+	renderObjects: function() {
+		if(RB.itemTimer > RB.helpers.randIntBetween(0.5, 1)) {
+			RB.objects.items.push(new RB.objects.item('waffle'))
+			RB.itemTimer = 0;
+		} else {
+			RB.itemTimer += RB.core.delta;
 		}
-	);
-}
+	}
+};
 
-function mouseOnItem(item, x, y) {
-	return (
-		x >= item.pos.x &&
-		x - item.pos.x <= item.dim.width &&
-		y >= item.pos.y &&
-		y - item.pos.y <= item.dim.height
-	);
-}
-
-// item class
-function Item(type) {
-	// properties
-	this.type = type;
-	this.id = Math.random().toString(BASE_SIXTEEN).slice(2);
-	this.el = document.getElementById(type);
-	this.dim = {
-		width: MAX_SIZE,
-		height: MAX_SIZE
-	};
-	this.pos = {
-		x: randIntBetween(0, screenWidth) - this.dim.width,
-		y: 0
-	};
-	this.speed = {
-		x: 0,
-		y: randIntBetween(MIN_SPEED,MAX_SPEED)
-	};
-	this.clicked = false;
-
-	// class methods
-	this.isVisible = function() {
-		return (this.pos.x <= screenWidth && this.pos.y <= screenHeight);
-	};
-
-	this.move = function() {
-		this.pos.x += this.speed.x;
-		this.pos.y += this.speed.y;
-	};
+RB.helpers = {
+	randIntBetween: function(min, max) {
+		return Math.floor(Math.random() * (max - min + 1)) + min;
+	}
 }
 
 window.onload = function() {
-	// canvas variables
-	var canvas = document.createElement('canvas'),
-	    context = canvas.getContext('2d'),
-	    main = document.querySelector('div.main');
-
-	// loop variables
-	var frameCount = 0,
-	    time = 0,
-	    items = [],
-	    types = ['waffle', 'pancake', 'egg'];
-
-	// game variables
-	var score = 0;
-
-	// initialize canvas
-	canvas.width = screenWidth;
-	canvas.height = screenHeight;
-	canvas.addEventListener('click', click, false);
-	main.appendChild(canvas);
-
-	function click(e) {
-		var x = e.clientX,
-		    y = e.clientY,
-		    removedItems = [];
-
-		e.preventDefault();
-
-		removedItems = _.chain(items)
-			.filter(function(item) { return mouseOnItem(item, x, y); })
-			.each(function(item) {
-				item.clicked = true;
-				if(item.type === 'waffle') score += 5;
-				if(item.type === 'pancake') score -= 5;
-				if(item.type === 'egg') score += 2;
-			});
-	}
-
-	// animation loop
-	function loop() {
-		var refreshRate = randIntBetween(0.25*FPS, FPS);
-
-		context.clearRect(0,0,screenWidth,screenHeight);
-		context.save();
-
-		context.fillText(time, 40, 40);
-		context.font = 'bold 100pt Arial';
-		context.textAlign = 'center';
-		context.fillText(score, screenWidth/2, screenHeight/2);
-
-		frameCount++;
-		if(frameCount % FPS == 0) {
-			time++;
-		}
-
-		if(frameCount % refreshRate == 0) {
-			var type = types[randItem()];
-			items.push(new Item(type));
-		}
-
-		items = _.chain(items)
-			.filter(function(item) { return (item.isVisible() && !item.clicked); })
-			.each(function(item) {
-				item.move();
-				context.drawImage(item.el, item.pos.x, item.pos.y);
-			});
-
-		context.restore();
-		requestAnimationFrame(loop, FPS);
-	}
-
-	if (!window.requestAnimationFrame) {
-		window.requestAnimationFrame = vendorRequestAnimationFrame();
-	}
-
-	loop();
-}
+	RB.init();
+};
 
 })();
