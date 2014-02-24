@@ -2,21 +2,17 @@
 
 // constants
 var FPS = 60,
-	ONE_SECOND = 1000,
-	BASE_SIXTEEN = 16,
-
-	MIN_SIZE = 100,
-	MAX_SIZE = 200,
-
-	MIN_SPEED = 10,
-	MAX_SPEED = 20,
-
-	NUM_ITEMS = 3;
-
+    ONE_SECOND = 1000,
+    BASE_SIXTEEN = 16,
+    MIN_SIZE = 100,
+    MAX_SIZE = 200,
+    MIN_SPEED = 10,
+    MAX_SPEED = 20,
+    NUM_ITEMS = 3;
 
 // window properties
 var screenHeight = window.innerHeight,
-	screenWidth = window.innerWidth;
+    screenWidth = window.innerWidth;
 
 
 // helper functions 
@@ -83,11 +79,12 @@ function Item(type) {
 window.onload = function() {
 	// canvas variables
 	var canvas = document.createElement('canvas'),
-		context = canvas.getContext('2d'),
-		main = document.querySelector('div.main');
+	    context = canvas.getContext('2d'),
+	    main = document.querySelector('div.main');
 
-    // loop variables
-    var frameCount = time = 0,
+	// loop variables
+	var frameCount = 0,
+	    time = 0,
 	    items = [],
 	    types = ['waffle', 'pancake', 'egg'];
 
@@ -102,10 +99,12 @@ window.onload = function() {
 
 	function click(e) {
 		var x = e.clientX,
-			y = e.clientY;
-			e.preventDefault();
+		    y = e.clientY,
+		    removedItems = [];
 
-		var removedItems = _.chain(items)
+		e.preventDefault();
+
+		removedItems = _.chain(items)
 			.filter(function(item) { return mouseOnItem(item, x, y); })
 			.each(function(item) {
 				item.clicked = true;
