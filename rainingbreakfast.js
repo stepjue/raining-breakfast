@@ -16,18 +16,23 @@ RB.resources = {
 	}
 };
 
+RB.events = {
+	
+}
+
 RB.objects = {
 	item: function(type) {
 		this.type = type;
+		this.size = RB.helpers.randIntBetween(50,200);
+
 		this.img = document.createElement('img');
 		this.img.src = RB.resources.images[type];
-		this.dim = {
-			x: 200,
-			y: 200
-		};
+		this.img.width = this.size;
+		this.img.height = this.size;
+
 		this.pos = {
-			x: RB.helpers.randIntBetween(this.dim.x, RB.const.windowWidth - this.dim.x),
-			y: 0
+			x: RB.helpers.randIntBetween(this.size, RB.const.windowWidth - this.size),
+			y: -this.size
 		};
 		this.speed = RB.helpers.randIntBetween(200, 800);
 	},
@@ -90,7 +95,6 @@ RB.setup = {
 	},
 
 	addListeners: function() {
-	//	window.addEventListener('resize', );
 	},
 
 	createCanvas: function() {
@@ -128,13 +132,16 @@ RB.workers = {
 	renderGraphics: function() {
 		_.each(RB.objects.items, function(item) {
 			var wholePixelItemY = (item.pos.y + 0.5) | 0; // fast round to whole pixel
-			RB.canvas.context.drawImage(item.img, item.pos.x, wholePixelItemY, item.dim.x, item.dim.y);
+			RB.canvas.context.drawImage(item.img, item.pos.x, wholePixelItemY, item.size, item.size);
 		});
 	},
 
 	renderObjects: function() {
 		if(RB.itemTimer > RB.helpers.randIntBetween(0.5, 1)) {
-			RB.objects.items.push(new RB.objects.item('waffle'))
+			if(RB.core.now % 2 === 0) RB.objects.items.push(new RB.objects.item('waffle'));
+			else if(RB.core.now % 3 === 0) RB.objects.items.push(new RB.objects.item('egg'));
+			else if(RB.core.now % 4 === 0) RB.objects.items.push(new RB.objects.item('pancake'));
+			else if(RB.core.now % 17 === 0) RB.objects.items.push(new RB.objects.item('doge'));
 			RB.itemTimer = 0;
 		} else {
 			RB.itemTimer += RB.core.delta;
@@ -145,6 +152,13 @@ RB.workers = {
 RB.helpers = {
 	randIntBetween: function(min, max) {
 		return Math.floor(Math.random() * (max - min + 1)) + min;
+	},
+
+	itemsInRange: function(x, y) {
+		return _.filter(RB.objects.items, function(item) {
+			return (x >= item.pos.x && (x - item.pos.x) <= item.dim.width &&
+			        y >= item.pos.y && (y - item.pos.y) <= item.dim.height);
+		}).value();
 	}
 }
 
